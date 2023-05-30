@@ -1,8 +1,19 @@
-import { useState } from "react";
+// @ts-nocheck
+import { useEffect, useState } from "react";
 import "./App.css";
 import Card from "./components/Card";
+import axios from "axios";
+import { io } from "socket.io-client";
+
+interface TodoProps {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean;
+}
 
 function App() {
+  const socket = io("ws://5jbe3d-3000.csb.app");
   const [data, setData] = useState([
     {
       title: "test1",
@@ -15,16 +26,57 @@ function App() {
     },
   ]);
 
+  const [todos, setTodos] = useState<TodoProps>([]);
+
+  useEffect(() => {
+    fetchData();
+  });
+
   // use this function
-  const fetchData = () => {};
+  const fetchData = () => {
+    axios.get("https://jsonplaceholder.typicode.com/todos").then((res) => {
+      setTodos(res.data);
+    });
+  };
+
+  const socketFetch = () => {
+    socket.emit("get-data", 1);
+  };
+
+  socket.on("receive-data", (res) => {
+    console.log(res);
+    // setData(res.data);
+    // setTodos(res.todos);
+  });
+
+  const uploadData = () => {
+    // console.log("working");
+    axios
+      .post("https://5jbe3d-5001.csb.app/upload", { data: data, todos: todos })
+      .then((res) => {
+        alert("your data is uploaded");
+      })
+      .catch((err) => {
+        alert("something went wrong");
+      });
+  };
 
   return (
-    <>
-      {data.map((e, i) => {
-        <Card key={i} title={e.title} body={e.body} />;
-      })}
-    </>
+    <div>
+      <div>
+        {data.map((e, i) => (
+          <Card key={i} title={e.title} body={e.body} />
+        ))}
+      </div>
+      <div>
+        {todos.map((e, i) => (
+          <p key={i}>{e.title} </p>
+        ))}
+      </div>
+      <button onClick={() => uploadData()}> Upload </button>
+    </div>
   );
 }
+// <button onClick={() => socketFetch()}> Socket Fetch </button>
 
 export default App;
